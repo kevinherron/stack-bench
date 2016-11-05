@@ -1,0 +1,55 @@
+ReadBenchmark
+request-count   	100000
+concurrency     	1
+duration        	13159ms
+mean-rate       	7598.873265333922
+75%             	0.12782
+95%             	0.167695
+98%             	0.244211
+99%             	0.358116
+99.9%           	1.25184
+
+ReadBenchmark
+request-count   	100000
+concurrency     	4
+duration        	4232ms
+mean-rate       	23626.482245490904
+75%             	0.165233
+95%             	0.204184
+98%             	0.257727
+99%             	0.308432
+99.9%           	1.513231
+
+ReadBenchmark
+request-count   	100000
+concurrency     	16
+duration        	3464ms
+mean-rate       	28867.433777515853
+75%             	0.559011
+95%             	0.643532
+98%             	0.737656
+99%             	0.823144
+99.9%           	2.277095
+
+ReadBenchmark
+request-count   	100000
+concurrency     	64
+duration        	3574ms
+mean-rate       	27979.35454015155
+75%             	2.177324
+95%             	2.530831
+98%             	3.650247
+99%             	4.549907
+99.9%           	12.205045
+
+ReadBenchmark
+request-count   	100000
+concurrency     	128
+duration        	3438ms
+mean-rate       	29085.425716075766
+75%             	4.383007
+95%             	5.288653
+98%             	6.223761
+99%             	6.83236
+99.9%           	8.774806
+

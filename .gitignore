@@ -1,0 +1,17 @@
+*.class
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# IntelliJ #
+*.iml
+.idea/*
+
+# Maven #
+**/target/*
+target/*
+
+**/dependency-reduced-pom.xml
+**/*.DS_Store
