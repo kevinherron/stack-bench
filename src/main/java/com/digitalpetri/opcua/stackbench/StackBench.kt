@@ -45,7 +45,9 @@ fun main(args: Array<String>) {
 private fun getOpcUaClient(endpointUrl: String): OpcUaClient {
     val endpoints = UaTcpStackClient.getEndpoints(endpointUrl).get()
 
-    val endpoint = endpoints.find { e -> e.securityPolicyUri == SecurityPolicy.Basic128Rsa15.securityPolicyUri } ?:
+    endpoints.forEach { println("Got endpoint: ${it.endpointUrl} [${it.securityPolicyUri}]") }
+
+    val endpoint = endpoints.find { e -> e.securityPolicyUri == SecurityPolicy.None.securityPolicyUri } ?:
         throw Exception("endpoint for URL '$endpointUrl' not found")
 
     println("Connecting to endpoint: " + endpoint.endpointUrl + " [" + endpoint.securityPolicyUri + "]")
