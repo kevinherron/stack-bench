@@ -240,7 +240,7 @@ abstract class ReadBenchmark(private val config: Config) : Benchmark {
 
     data class Run(val concurrency: Int, val duration: Duration, val meanRate: Double, val snapshot: Snapshot)
 
-    class ReadBenchmarkResult(
+    inner class ReadBenchmarkResult(
         private val benchmark: Benchmark,
         private val requestCount: Long,
         private val runs: List<Run>
@@ -251,6 +251,7 @@ abstract class ReadBenchmark(private val config: Config) : Benchmark {
 
             for ((concurrency, duration, meanRate, snapshot) in runs) {
                 pw.println(benchmark.name)
+                pw.println("security-policy".padEnd(16) + "\t${config.getString("stack-bench.security-policy")}")
                 pw.println("request-count".padEnd(16) + "\t$requestCount")
                 pw.println("concurrency".padEnd(16, ' ') + "\t$concurrency")
                 pw.println("duration".padEnd(16, ' ') + "\t${duration.toMillis()}ms")
