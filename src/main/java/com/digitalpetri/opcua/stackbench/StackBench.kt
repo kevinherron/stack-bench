@@ -1,6 +1,7 @@
 package com.digitalpetri.opcua.stackbench
 
 import com.codahale.metrics.MetricRegistry
+import com.digitalpetri.opcua.stackbench.benchmarks.ReadScalarsRegisteredBenchmark
 import com.digitalpetri.opcua.stackbench.benchmarks.ReadScalarsBenchmark
 import com.typesafe.config.ConfigFactory
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient
@@ -27,14 +28,22 @@ fun main(args: Array<String>) {
     val filename = args[0]
     val config = ConfigFactory.parseFile(File(filename))
 
-    val name = config.getString("stack-bench.name")
+    val serverName = config.getString("stack-bench.name")
     val endpointUrl = config.getString("stack-bench.endpoint-url")
     val securityPolicyName = config.getString("stack-bench.security-policy")
 
     val securityPolicy = SecurityPolicy.values().first { it.name == securityPolicyName }
 
-    val benchmark = ReadScalarsBenchmark(config)
-    val result = benchmark.execute(getOpcUaClient(endpointUrl, securityPolicy))
+    val client = getOpcUaClient(endpointUrl, securityPolicy)
+
+    executeBenchmark(serverName, ReadScalarsBenchmark(client, config))
+    executeBenchmark(serverName, ReadScalarsRegisteredBenchmark(client, config))
+}
+
+private fun executeBenchmark(serverName: String, benchmark: Benchmark) {
+    println("starting benchmark: ${benchmark.name}")
+
+    val result = benchmark.execute()
 
     result.writeToStream(System.out)
 
@@ -42,10 +51,10 @@ fun main(args: Array<String>) {
 
     val fos =
         FileOutputStream(
-            "results/" + name.replace(
+            "results/" + serverName.replace(
                 "\\s+".toRegex(),
                 "_"
-            ) + "_${benchmark.name}_${securityPolicy.name}_${System.currentTimeMillis()}.txt"
+            ) + "_${benchmark.name}_${System.currentTimeMillis()}.txt"
         )
     result.writeToStream(fos)
     fos.flush()

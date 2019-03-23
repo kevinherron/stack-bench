@@ -7,12 +7,14 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId
 
 
-class ReadScalarsBenchmark(client: OpcUaClient, config: Config) : ReadBenchmark(client, config) {
+class ReadScalarsRegisteredBenchmark(client: OpcUaClient, config: Config) : ReadBenchmark(client, config) {
 
-    override fun getName(): String = "ReadScalars"
+    override fun getName(): String = "ReadScalarsRegistered"
 
     override fun getNodesToRead(): List<ReadValueId> {
-        return scalarNodeIds.map {
+        val registeredNodeIds = registerNodes(client, scalarNodeIds).get()
+
+        return registeredNodeIds.map {
             ReadValueId(
                 it,
                 AttributeId.Value.uid(),

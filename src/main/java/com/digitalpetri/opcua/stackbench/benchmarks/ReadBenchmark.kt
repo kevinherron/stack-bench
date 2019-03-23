@@ -25,14 +25,17 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicLong
 
-abstract class ReadBenchmark(private val config: Config) : Benchmark {
+abstract class ReadBenchmark(
+    protected val client: OpcUaClient,
+    protected val config: Config
+) : Benchmark {
 
     protected lateinit var scalarNodeIds: List<NodeId>
     protected lateinit var arrayNodeIds: List<NodeId>
 
     abstract fun getNodesToRead(): List<ReadValueId>
 
-    override fun execute(client: OpcUaClient): ReadBenchmarkResult {
+    override fun execute(): ReadBenchmarkResult {
         val requestCount = config.getLong("stack-bench.read-benchmark.request-count")
         val concurrencyLevels = config.getIntList("stack-bench.read-benchmark.concurrency-levels")
 
