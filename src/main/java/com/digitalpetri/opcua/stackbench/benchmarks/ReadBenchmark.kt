@@ -39,24 +39,21 @@ abstract class ReadBenchmark(private val config: Config) : Benchmark {
         scalarNodeIds = scalarNodeIds(config)
         arrayNodeIds = arrayNodes(config)
 
-        val registeredScalarNodeIds = registerNodes(scalarNodeIds).get()
-        val registeredArrayNodeIds = registerNodes(arrayNodeIds).get()
-
-        if (verifyNodes(client, registeredScalarNodeIds + registeredArrayNodeIds)) {
+        if (verifyNodes(client, scalarNodeIds + arrayNodeIds)) {
             println("verified nodes")
         } else {
             println("not all configured nodes are valid")
             System.exit(-1)
         }
 
-        if (resetScalarValues(client, registeredScalarNodeIds)) {
+        if (resetScalarValues(client, scalarNodeIds)) {
             println("reset scalar values")
         } else {
             println("could not reset all scalar values")
             System.exit(-1)
         }
 
-        if (resetArrayValues(client, registeredArrayNodeIds)) {
+        if (resetArrayValues(client, arrayNodeIds)) {
             println("reset array values")
         } else {
             println("could not reset all array values")
@@ -151,8 +148,13 @@ abstract class ReadBenchmark(private val config: Config) : Benchmark {
         return values.all { it.statusCode!!.isGood }
     }
 
-    private fun registerNodes(nodeIds: List<NodeId>): CompletableFuture<List<NodeId>> {
-        return CompletableFuture.completedFuture(nodeIds)
+    protected fun registerNodes(client: OpcUaClient, nodeIds: List<NodeId>): CompletableFuture<List<NodeId>> {
+        return try {
+            client.registerNodes(nodeIds)
+                .thenApply { it.registeredNodeIds?.toList() }
+        } catch (ex: Throwable) {
+            CompletableFuture.completedFuture(nodeIds)
+        }
     }
 
     private fun resetScalarValues(client: OpcUaClient, scalarNodeIds: List<NodeId>): Boolean {
