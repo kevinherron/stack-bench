@@ -84,6 +84,7 @@ class ReadBenchmark(private val config: Config) : Benchmark {
 
             println("concurrency=$concurrency, count=$requestCount, duration=${run.duration.toMillis()}ms, meanRate=${run.meanRate}")
 
+            System.gc()
             Thread.sleep(500)
         }
 
@@ -144,12 +145,12 @@ class ReadBenchmark(private val config: Config) : Benchmark {
         val values = client.readValues(0.0, TimestampsToReturn.Neither, nodeIds).get()
 
         nodeIds.zip(values).forEach { p ->
-            if (p.second.statusCode.isBad) {
+            if (p.second.statusCode!!.isBad) {
                 println("${p.first} = ${p.second.statusCode}")
             }
         }
 
-        return values.all { it.statusCode.isGood }
+        return values.all { it.statusCode!!.isGood }
     }
 
     private fun registerNodes(nodeIds: List<NodeId>): CompletableFuture<List<NodeId>> {
@@ -176,18 +177,20 @@ class ReadBenchmark(private val config: Config) : Benchmark {
         return statusCodes.all { it.isGood }
     }
 
-    private fun read(client: OpcUaClient,
-                     count: AtomicLong,
-                     requestCount: Long,
-                     concurrency: Int,
-                     nodesToRead: Array<ReadValueId>): Run {
+    private fun read(
+        client: OpcUaClient,
+        count: AtomicLong,
+        requestCount: Long,
+        concurrency: Int,
+        nodesToRead: Array<ReadValueId>
+    ): Run {
 
         val timer = METRIC_REGISTRY.timer("ReadBenchmark-$concurrency-${System.currentTimeMillis()}")
 
         val startTime = System.nanoTime()
         val readLatch = CountDownLatch(concurrency)
 
-        for (i in 0..concurrency - 1) {
+        for (i in 0 until concurrency) {
             count.incrementAndGet()
 
             read(client, count, requestCount, nodesToRead, timer, readLatch)
@@ -203,17 +206,20 @@ class ReadBenchmark(private val config: Config) : Benchmark {
         return Run(concurrency, duration, meanRate, snapshot)
     }
 
-    private fun read(client: OpcUaClient,
-                     count: AtomicLong,
-                     requestCount: Long,
-                     nodesToRead: Array<ReadValueId>,
-                     timer: Timer,
-                     latch: CountDownLatch) {
+    private fun read(
+        client: OpcUaClient,
+        count: AtomicLong,
+        requestCount: Long,
+        nodesToRead: Array<ReadValueId>,
+        timer: Timer,
+        latch: CountDownLatch
+    ) {
 
         client.session.thenAccept { session ->
             val request = ReadRequest(
                 client.newRequestHeader(session.authenticationToken),
-                0.0, TimestampsToReturn.Both, nodesToRead)
+                0.0, TimestampsToReturn.Both, nodesToRead
+            )
 
             val context = timer.time()
 
@@ -240,9 +246,11 @@ class ReadBenchmark(private val config: Config) : Benchmark {
 
     data class Run(val concurrency: Int, val duration: Duration, val meanRate: Double, val snapshot: Snapshot)
 
-    class ReadBenchmarkResult(private val benchmark: ReadBenchmark,
-                              private val requestCount: Long,
-                              private val runs: List<Run>) : BenchmarkResult {
+    class ReadBenchmarkResult(
+        private val benchmark: ReadBenchmark,
+        private val requestCount: Long,
+        private val runs: List<Run>
+    ) : BenchmarkResult {
 
         override fun writeToStream(os: OutputStream) {
             val pw = PrintWriter(os)

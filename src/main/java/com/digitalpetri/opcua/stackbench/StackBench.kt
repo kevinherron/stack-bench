@@ -5,7 +5,7 @@ import com.digitalpetri.opcua.stackbench.benchmarks.ReadBenchmark
 import com.typesafe.config.ConfigFactory
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient
 import org.eclipse.milo.opcua.sdk.client.api.config.OpcUaClientConfig
-import org.eclipse.milo.opcua.stack.client.UaTcpStackClient
+import org.eclipse.milo.opcua.stack.client.DiscoveryClient
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned
@@ -36,19 +36,20 @@ fun main(args: Array<String>) {
 
     File("results").mkdirs()
 
-    val fos = FileOutputStream("results/" + name.replace("\\s+".toRegex(), "_") + "_read_${System.currentTimeMillis()}.txt")
+    val fos =
+        FileOutputStream("results/" + name.replace("\\s+".toRegex(), "_") + "_read_${System.currentTimeMillis()}.txt")
     result.writeToStream(fos)
     fos.flush()
     fos.close()
 }
 
 private fun getOpcUaClient(endpointUrl: String): OpcUaClient {
-    val endpoints = UaTcpStackClient.getEndpoints(endpointUrl).get()
+    val endpoints = DiscoveryClient.getEndpoints(endpointUrl).get()
 
     endpoints.forEach { println("Got endpoint: ${it.endpointUrl} [${it.securityPolicyUri}]") }
 
-    val endpoint = endpoints.find { e -> e.securityPolicyUri == SecurityPolicy.None.securityPolicyUri } ?:
-        throw Exception("endpoint for URL '$endpointUrl' not found")
+    val endpoint = endpoints.find { e -> e.securityPolicyUri == SecurityPolicy.None.uri }
+        ?: throw Exception("endpoint for URL '$endpointUrl' not found")
 
     println("Connecting to endpoint: " + endpoint.endpointUrl + " [" + endpoint.securityPolicyUri + "]")
 
@@ -63,7 +64,7 @@ private fun getOpcUaClient(endpointUrl: String): OpcUaClient {
         .setKeyPair(loader.clientKeyPair)
         .build()
 
-    val client = OpcUaClient(config)
+    val client = OpcUaClient.create(config)
 
     client.connect().get()
 
