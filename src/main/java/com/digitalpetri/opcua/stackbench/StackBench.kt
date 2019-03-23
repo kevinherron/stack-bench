@@ -1,20 +1,20 @@
 package com.digitalpetri.opcua.stackbench
 
 import com.codahale.metrics.MetricRegistry
-import com.digitalpetri.opcua.stackbench.benchmarks.ReadBenchmark
+import com.digitalpetri.opcua.stackbench.benchmarks.ReadScalarsBenchmark
 import com.typesafe.config.ConfigFactory
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient
 import org.eclipse.milo.opcua.sdk.client.api.config.OpcUaClientConfig
 import org.eclipse.milo.opcua.stack.client.DiscoveryClient
+import org.eclipse.milo.opcua.stack.core.channel.MessageLimits
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileOutputStream
-import java.security.KeyPair
-import java.security.KeyStore
-import java.security.PrivateKey
-import java.security.cert.X509Certificate
+import java.nio.file.Files
+import java.nio.file.Paths
 
 val METRIC_REGISTRY = MetricRegistry()
 
@@ -29,31 +29,50 @@ fun main(args: Array<String>) {
 
     val name = config.getString("stack-bench.name")
     val endpointUrl = config.getString("stack-bench.endpoint-url")
+    val securityPolicyName = config.getString("stack-bench.security-policy")
 
-    val result = ReadBenchmark(config).execute(getOpcUaClient(endpointUrl))
+    val securityPolicy = SecurityPolicy.values().first { it.name == securityPolicyName }
+
+    val benchmark = ReadScalarsBenchmark(config)
+    val result = benchmark.execute(getOpcUaClient(endpointUrl, securityPolicy))
 
     result.writeToStream(System.out)
 
     File("results").mkdirs()
 
     val fos =
-        FileOutputStream("results/" + name.replace("\\s+".toRegex(), "_") + "_read_${System.currentTimeMillis()}.txt")
+        FileOutputStream(
+            "results/" + name.replace(
+                "\\s+".toRegex(),
+                "_"
+            ) + "_${benchmark.name}_${securityPolicy.name}_${System.currentTimeMillis()}.txt"
+        )
     result.writeToStream(fos)
     fos.flush()
     fos.close()
 }
 
-private fun getOpcUaClient(endpointUrl: String): OpcUaClient {
+private fun getOpcUaClient(endpointUrl: String, securityPolicy: SecurityPolicy): OpcUaClient {
     val endpoints = DiscoveryClient.getEndpoints(endpointUrl).get()
 
     endpoints.forEach { println("Got endpoint: ${it.endpointUrl} [${it.securityPolicyUri}]") }
 
-    val endpoint = endpoints.find { e -> e.securityPolicyUri == SecurityPolicy.None.uri }
+    val endpoint = endpoints.find { e -> e.securityPolicyUri == securityPolicy.uri }
         ?: throw Exception("endpoint for URL '$endpointUrl' not found")
 
     println("Connecting to endpoint: " + endpoint.endpointUrl + " [" + endpoint.securityPolicyUri + "]")
 
-    val loader = KeyStoreLoader().load()
+    val securityTempDir = Paths.get(System.getProperty("java.io.tmpdir"), "security").apply {
+        Files.createDirectories(this)
+        if (!Files.exists(this)) {
+            throw Exception("unable to create security dir: $this")
+        }
+    }
+
+    LoggerFactory.getLogger("StackBench")
+        .info("security temp dir: {}", securityTempDir.toAbsolutePath())
+
+    val loader = KeyStoreLoader().load(securityTempDir)
 
     val config = OpcUaClientConfig.builder()
         .setApplicationName(LocalizedText.english("StackBench"))
@@ -62,6 +81,7 @@ private fun getOpcUaClient(endpointUrl: String): OpcUaClient {
         .setRequestTimeout(Unsigned.uint(30000))
         .setCertificate(loader.clientCertificate)
         .setKeyPair(loader.clientKeyPair)
+        .setMessageLimits(MessageLimits(8196, 16, 32 * 8196))
         .build()
 
     val client = OpcUaClient.create(config)
@@ -69,32 +89,4 @@ private fun getOpcUaClient(endpointUrl: String): OpcUaClient {
     client.connect().get()
 
     return client
-}
-
-private class KeyStoreLoader {
-
-    var clientCertificate: X509Certificate? = null
-        private set
-    var clientKeyPair: KeyPair? = null
-        private set
-
-    fun load(): KeyStoreLoader {
-        val keyStore = KeyStore.getInstance("PKCS12")
-        keyStore.load(javaClass.classLoader.getResourceAsStream("stackbench.pfx"), PASSWORD)
-
-        val clientPrivateKey = keyStore.getKey(CLIENT_ALIAS, PASSWORD)
-        if (clientPrivateKey is PrivateKey) {
-            clientCertificate = keyStore.getCertificate(CLIENT_ALIAS) as X509Certificate
-            val clientPublicKey = clientCertificate!!.publicKey
-            clientKeyPair = KeyPair(clientPublicKey, clientPrivateKey)
-        }
-
-        return this
-    }
-
-    companion object {
-        private val CLIENT_ALIAS = "client-ai"
-        private val PASSWORD = "password".toCharArray()
-    }
-
 }

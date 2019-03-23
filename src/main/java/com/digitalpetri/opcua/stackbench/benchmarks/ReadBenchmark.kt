@@ -8,7 +8,6 @@ import com.digitalpetri.opcua.stackbench.METRIC_REGISTRY
 import com.google.common.collect.ImmutableList
 import com.typesafe.config.Config
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient
-import org.eclipse.milo.opcua.stack.core.AttributeId
 import org.eclipse.milo.opcua.stack.core.serialization.UaResponseMessage
 import org.eclipse.milo.opcua.stack.core.types.builtin.*
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte
@@ -26,14 +25,19 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicLong
 
-class ReadBenchmark(private val config: Config) : Benchmark {
+abstract class ReadBenchmark(private val config: Config) : Benchmark {
+
+    protected lateinit var scalarNodeIds: List<NodeId>
+    protected lateinit var arrayNodeIds: List<NodeId>
+
+    abstract fun getNodesToRead(): List<ReadValueId>
 
     override fun execute(client: OpcUaClient): ReadBenchmarkResult {
         val requestCount = config.getLong("stack-bench.read-benchmark.request-count")
         val concurrencyLevels = config.getIntList("stack-bench.read-benchmark.concurrency-levels")
 
-        val scalarNodeIds = scalarNodeIds(config)
-        val arrayNodeIds = arrayNodes(config)
+        scalarNodeIds = scalarNodeIds(config)
+        arrayNodeIds = arrayNodes(config)
 
         val registeredScalarNodeIds = registerNodes(scalarNodeIds).get()
         val registeredArrayNodeIds = registerNodes(arrayNodeIds).get()
@@ -59,13 +63,7 @@ class ReadBenchmark(private val config: Config) : Benchmark {
             System.exit(-1)
         }
 
-        val nodesToRead = (scalarNodeIds + arrayNodeIds).map {
-            ReadValueId(
-                it,
-                AttributeId.Value.uid(),
-                null, QualifiedName.NULL_VALUE
-            )
-        }.toTypedArray()
+        val nodesToRead = getNodesToRead().toTypedArray()
 
         val runs = ArrayList<Run>()
 
@@ -240,14 +238,10 @@ class ReadBenchmark(private val config: Config) : Benchmark {
         }
     }
 
-    override fun toString(): String {
-        return "ReadBenchmark"
-    }
-
     data class Run(val concurrency: Int, val duration: Duration, val meanRate: Double, val snapshot: Snapshot)
 
     class ReadBenchmarkResult(
-        private val benchmark: ReadBenchmark,
+        private val benchmark: Benchmark,
         private val requestCount: Long,
         private val runs: List<Run>
     ) : BenchmarkResult {
@@ -256,7 +250,7 @@ class ReadBenchmark(private val config: Config) : Benchmark {
             val pw = PrintWriter(os)
 
             for ((concurrency, duration, meanRate, snapshot) in runs) {
-                pw.println(benchmark.toString())
+                pw.println(benchmark.name)
                 pw.println("request-count".padEnd(16) + "\t$requestCount")
                 pw.println("concurrency".padEnd(16, ' ') + "\t$concurrency")
                 pw.println("duration".padEnd(16, ' ') + "\t${duration.toMillis()}ms")
