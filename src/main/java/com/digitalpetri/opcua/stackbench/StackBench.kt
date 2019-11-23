@@ -1,8 +1,8 @@
 package com.digitalpetri.opcua.stackbench
 
 import com.codahale.metrics.MetricRegistry
-import com.digitalpetri.opcua.stackbench.benchmarks.ReadScalarsRegisteredBenchmark
 import com.digitalpetri.opcua.stackbench.benchmarks.ReadScalarsBenchmark
+import com.digitalpetri.opcua.stackbench.benchmarks.ReadScalarsRegisteredBenchmark
 import com.typesafe.config.ConfigFactory
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient
 import org.eclipse.milo.opcua.sdk.client.api.config.OpcUaClientConfig
