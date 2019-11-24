@@ -2,7 +2,6 @@ package com.digitalpetri.opcua.stackbench
 
 import com.codahale.metrics.MetricRegistry
 import com.digitalpetri.opcua.stackbench.benchmarks.ReadScalarsBenchmark
-import com.digitalpetri.opcua.stackbench.benchmarks.ReadScalarsRegisteredBenchmark
 import com.typesafe.config.ConfigFactory
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient
 import org.eclipse.milo.opcua.sdk.client.api.config.OpcUaClientConfig
@@ -16,13 +15,14 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.file.Files
 import java.nio.file.Paths
+import kotlin.system.exitProcess
 
 val METRIC_REGISTRY = MetricRegistry()
 
 fun main(args: Array<String>) {
     if (args.size != 1) {
         println("usage: java -jar stack-bench.jar <config file>")
-        System.exit(-1)
+        exitProcess(-1)
     }
 
     val filename = args[0]
@@ -37,7 +37,6 @@ fun main(args: Array<String>) {
     val client = getOpcUaClient(endpointUrl, securityPolicy)
 
     executeBenchmark(serverName, ReadScalarsBenchmark(client, config))
-    executeBenchmark(serverName, ReadScalarsRegisteredBenchmark(client, config))
 }
 
 private fun executeBenchmark(serverName: String, benchmark: Benchmark) {
