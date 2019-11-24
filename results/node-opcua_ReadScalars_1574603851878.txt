@@ -1,0 +1,60 @@
+ReadScalars
+security-policy 	None
+request-count   	200000
+concurrency     	1
+duration        	59208ms
+mean-rate       	3377.8944455288793
+75%             	0.294895
+95%             	0.364401
+98%             	0.405291
+99%             	0.45639
+99.9%           	2.139864
+
+ReadScalars
+security-policy 	None
+request-count   	200000
+concurrency     	4
+duration        	43810ms
+mean-rate       	4565.1113696891225
+75%             	0.886351
+95%             	1.169489
+98%             	1.409081
+99%             	1.620612
+99.9%           	2.535696
+
+ReadScalars
+security-policy 	None
+request-count   	200000
+concurrency     	16
+duration        	41627ms
+mean-rate       	4804.526904735735
+75%             	3.383531
+95%             	3.992301
+98%             	4.463192
+99%             	4.748677
+99.9%           	6.694401
+
+ReadScalars
+security-policy 	None
+request-count   	200000
+concurrency     	64
+duration        	41823ms
+mean-rate       	4781.960836907831
+75%             	13.609835
+95%             	14.438594
+98%             	15.409926
+99%             	17.827772
+99.9%           	21.718589
+
+ReadScalars
+security-policy 	None
+request-count   	200000
+concurrency     	128
+duration        	41388ms
+mean-rate       	4832.202179542531
+75%             	26.847351
+95%             	28.592896
+98%             	31.376307
+99%             	32.029307
+99.9%           	38.617951
+
